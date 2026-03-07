@@ -40,6 +40,23 @@ static sht3x_t sht31_dev;
 esp_rmaker_device_t * sht31_device;
 #endif
 
+// Callback to handle commands received from the RainMaker cloud
+static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
+            const esp_rmaker_param_val_t val, void *priv_data, esp_rmaker_write_ctx_t *ctx)
+{
+    if (ctx)
+    {
+        ESP_LOGI(TAG, "Received write request via : %s", esp_rmaker_device_cb_src_to_str(ctx->src));
+    }
+
+    if (strcmp(esp_rmaker_param_get_name(param), "Dryness Level") == 0)
+    {
+        ESP_LOGI(TAG, "Silica Gel Replaced");
+    }
+
+    return ESP_OK;
+}
+
 // SHT31 task function
 void sht31_task(void * pvParameters)
 {
@@ -81,8 +98,8 @@ void sht31_task(void * pvParameters)
     {
         // Send humidity data to queue
         xQueueSend(task_queue, (void *) &temperature_humidity, (TickType_t) 5);
-        // Delay f0r 500ms
-        vTaskDelay(500/portTICK_PERIOD_MS);
+        // Delay f0r 1min
+        vTaskDelay(60000/portTICK_PERIOD_MS);
     }
 
     #endif
@@ -95,7 +112,7 @@ void app_main(void)
     float temperature_humidity[2];
 
     // Initialise queue for data transfer between tasks
-    task_queue = xQueueCreate(5, sizeof(temperature_humidity));
+    task_queue = xQueueCreate(2, sizeof(temperature_humidity));
 
     // Start task to receive data from SHT31 sensor
     xTaskCreatePinnedToCore(sht31_task, "SHT31 Sensor Task", 8192, NULL, 2, NULL, 1);
@@ -129,6 +146,7 @@ void app_main(void)
 
     // Initialise SHT31 device in Rainmaker application
     sht31_device = esp_rmaker_device_create("Drybox Humidity Sensor", NULL, &temperature_humidity);
+    esp_rmaker_device_add_cb(sht31_device, write_cb, NULL);
     esp_rmaker_node_add_device(node, sht31_device);
 
     // Add the name of the device
@@ -138,20 +156,37 @@ void app_main(void)
                                                         esp_rmaker_str("Drybox Humidity Sensor"),
                                                         PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST)));
     
-    // Add Humidity as the primary parameter to the device
+    // Create a custom humidity parameter
     esp_rmaker_param_t * humidity_param = esp_rmaker_param_create("Drybox Humidity", 
                                                                     NULL, 
                                                                     esp_rmaker_float(50.0), 
                                                                     PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    // Humidity parameter to display the text of the humidity percentage
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(humidity_param, ESP_RMAKER_UI_TEXT));
-    esp_rmaker_param_add_bounds(humidity_param, esp_rmaker_float(0), esp_rmaker_float(100), esp_rmaker_float(0.1));
+    // Bounded between 0-100
+    ESP_ERROR_CHECK(esp_rmaker_param_add_bounds(humidity_param, 
+                                                esp_rmaker_float(0), 
+                                                esp_rmaker_float(100), 
+                                                esp_rmaker_float(0.1)));
+    // Add the parameter to the device
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(sht31_device, humidity_param));
+    // Add Humidity as the primary parameter to the device
     ESP_ERROR_CHECK(esp_rmaker_device_assign_primary_param(sht31_device, humidity_param));
 
     // Add Temperature as another parameter
     esp_rmaker_param_t * temperature_param = esp_rmaker_temperature_param_create("Drybox Temperature", 25.0);
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(temperature_param, ESP_RMAKER_UI_TEXT));
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(sht31_device, temperature_param));
+
+    // Create boolean custom parameter to see if the drybox is adequetely dry
+    esp_rmaker_param_t * is_gel_replaced_param = esp_rmaker_param_create("Press to indicate Silica Gel is replaced", 
+                                                                NULL, 
+                                                                esp_rmaker_bool(true), 
+                                                                PROP_FLAG_READ | PROP_FLAG_WRITE);
+    // Dryness parameter to display the text of the humidity percentage
+    ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(is_gel_replaced_param, ESP_RMAKER_UI_TRIGGER));
+    // Add the parameter to the device
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(sht31_device, is_gel_replaced_param));
 
     // Enable OTA
     ESP_ERROR_CHECK(esp_rmaker_ota_enable_default());
@@ -161,14 +196,14 @@ void app_main(void)
     from the phone apps for scheduling to work correctly.
     For more information on the various ways of setting timezone, please check
     https://rainmaker.espressif.com/docs/time-service.html.
-
-    esp_rmaker_timezone_service_enable();
+    */
+/*     esp_rmaker_timezone_service_enable();
 
     // Enable scheduling.
     esp_rmaker_schedule_enable();
 
     // Enable Scenes
-    esp_rmaker_scenes_enable();*/
+    esp_rmaker_scenes_enable(); */
 
     // Enable Insights. Requires CONFIG_ESP_INSIGHTS_ENABLED=y
     ESP_ERROR_CHECK(app_insights_enable());

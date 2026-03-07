@@ -20,10 +20,10 @@ menu "SHT3X Configuration"
             help
                 Test only the rainmaker functionality, feed false humidity data. 
                 
-        config ONLY_QUEUE
-            bool "Only Queue"
+        config NONE
+            bool "NONE"
             help
-                Test neither functionalities, see if queue is working between tasks. 
+                Test neither functionalities. 
 
     endchoice
 

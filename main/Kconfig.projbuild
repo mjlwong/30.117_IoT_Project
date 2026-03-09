@@ -27,6 +27,13 @@ menu "SHT3X Configuration"
 
     endchoice
 
+    config HUMID_TIMER_LENGTH
+        int "Humidity Timer Length"
+        default 30
+        help
+            The length of time in minutes the drybox is too humid before the Rainmaker app
+            sends a notification to the user to replace the Silica Gel. 
+
     config SHT3X_ADDR
         hex "I2C address of SHT3x"
         default 0x44

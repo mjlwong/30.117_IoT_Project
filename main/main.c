@@ -27,15 +27,24 @@
 // Tag for log message
 static const char * TAG = "main";
 
+// Float variables to store temperature and humidity
+static float temperature = 25.0, humidity = 40.0;
+
 // Declare SHT31 sensor device object for interfacing
 #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_SENSOR_ONLY
 static sht3x_t sht31_dev;
 #endif
 
-// Declare SHT31 sensor device object for Rainmaker
+// Declare drybox device object for Rainmaker
 #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY 
-esp_rmaker_device_t * sht31_device;
+esp_rmaker_device_t * drybox_device;
 #endif
+
+// Declare timer for how long the drybox has been too humid
+TimerHandle_t humid_timer;
+
+// Humid timer boolean variable to keep track if the timer has started yet
+static bool has_timer_started = false;
 
 // Add callback function if configured to test Rainmaker IoT service
 #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY
@@ -50,10 +59,15 @@ static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_pa
         ESP_LOGI(TAG, "Received write request via : %s", esp_rmaker_device_cb_src_to_str(ctx->src));
     }
 
-    // If the user pressed the replaced silica gel button, display corresponding text
+    // If the user pressed the replaced silica gel button
     if (strcmp(esp_rmaker_param_get_name(param), "Press to indicate Silica Gel is replaced") == 0)
     {
+        // Set the dryness parameter to good on the app, stop the timer, clear the humid timer boolean to 0
         ESP_LOGI(TAG, "Silica Gel Replaced");
+        esp_rmaker_param_update_and_report(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
+                                            esp_rmaker_str("Good"));
+        xTimerStop(humid_timer, 0);
+        has_timer_started = false;
     }
 
     return ESP_OK;
@@ -61,7 +75,24 @@ static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_pa
 
 #endif
 
-// SHT31 task function
+// Humidity timer callback function
+void dryness_update(TimerHandle_t humid_timer)
+{
+    // When time is up and humidity has not gone down
+    if(humidity >= 60.0)
+    {
+        // Flip the dryness boolean to indicate drybox is inadequetely dry
+        ESP_LOGW(TAG, "High Humidity: Please replace Silica Gel");
+        // Indicate on the app that the silica gel should be replaced
+        esp_rmaker_param_update_and_notify(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
+                                            esp_rmaker_str("Bad: Please replace Silica Gel"));
+    }
+
+    // Reset humid timer boolean
+    has_timer_started = false;
+}
+
+// SHT31 initialisation function
 void sht31_init(void)
 {
     // Run code if configured to use SHT31 sensor
@@ -87,8 +118,12 @@ void sht31_init(void)
 // Main function
 void app_main(void)
 {
-    // Float variables to store temperature and humidity
-    float temperature = 25.0, humidity = 40.0;
+    // Humidity Timer to go off if the drybox is humid
+    humid_timer = xTimerCreate("Humidity Timer", 
+                                (CONFIG_HUMID_TIMER_LENGTH * 1000 * 60) / portTICK_PERIOD_MS, 
+                                pdFALSE, 
+                                NULL, 
+                                dryness_update);
 
     // Start task to receive data from SHT31 sensor
     sht31_init();
@@ -122,22 +157,20 @@ void app_main(void)
     }
 
     // Initialise SHT31 device in Rainmaker application
-    sht31_device = esp_rmaker_device_create("Drybox Humidity Sensor", NULL, NULL);
-    esp_rmaker_device_add_cb(sht31_device, write_cb, NULL);
-    esp_rmaker_node_add_device(node, sht31_device);
+    drybox_device = esp_rmaker_device_create("Drybox Humidity Sensor", NULL, NULL);
+    esp_rmaker_device_add_cb(drybox_device, write_cb, NULL);
+    esp_rmaker_node_add_device(node, drybox_device);
 
     // Add the name of the device
-    ESP_ERROR_CHECK(esp_rmaker_device_add_param(sht31_device, 
-                                esp_rmaker_param_create("Name", 
-                                                        NULL, 
-                                                        esp_rmaker_str("Drybox Humidity Sensor"),
-                                                        PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST)));
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(drybox_device, 
+                                esp_rmaker_name_param_create(ESP_RMAKER_DEF_NAME_PARAM, 
+                                                            "Drybox Humidity Sensor")));
     
     // Create a custom humidity parameter
     esp_rmaker_param_t * humidity_param = esp_rmaker_param_create("Drybox Humidity", 
-                                                                    NULL, 
-                                                                    esp_rmaker_float(50.0), 
-                                                                    PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+                                                                NULL, 
+                                                                esp_rmaker_float(50.0), 
+                                                                PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
     // Humidity parameter to display the text of the humidity percentage
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(humidity_param, ESP_RMAKER_UI_TEXT));
     // Bounded between 0-100
@@ -146,24 +179,34 @@ void app_main(void)
                                                 esp_rmaker_float(100), 
                                                 esp_rmaker_float(0.1)));
     // Add the parameter to the device
-    ESP_ERROR_CHECK(esp_rmaker_device_add_param(sht31_device, humidity_param));
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(drybox_device, humidity_param));
     // Add Humidity as the primary parameter to the device
-    ESP_ERROR_CHECK(esp_rmaker_device_assign_primary_param(sht31_device, humidity_param));
+    ESP_ERROR_CHECK(esp_rmaker_device_assign_primary_param(drybox_device, humidity_param));
 
     // Add Temperature as another parameter
     esp_rmaker_param_t * temperature_param = esp_rmaker_temperature_param_create("Drybox Temperature", 25.0);
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(temperature_param, ESP_RMAKER_UI_TEXT));
-    ESP_ERROR_CHECK(esp_rmaker_device_add_param(sht31_device, temperature_param));
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(drybox_device, temperature_param));
 
     // Create boolean custom parameter to see if the drybox is adequetely dry
+    esp_rmaker_param_t * dryness_param = esp_rmaker_param_create("Dryness Status", 
+                                                                NULL, 
+                                                                esp_rmaker_str("Good"), 
+                                                                PROP_FLAG_READ);
+    // Dryness parameter to display the text of the humidity percentage
+    ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(dryness_param, ESP_RMAKER_UI_TEXT));
+    // Add the parameter to the device
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(drybox_device, dryness_param));
+
+    // Create boolean custom parameter to check if silica gel is replaced
     esp_rmaker_param_t * is_gel_replaced_param = esp_rmaker_param_create("Press to indicate Silica Gel is replaced", 
                                                                 NULL, 
                                                                 esp_rmaker_bool(true), 
                                                                 PROP_FLAG_READ | PROP_FLAG_WRITE);
-    // Dryness parameter to display the text of the humidity percentage
+    // Trigger button to press when silica gel is replaced
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(is_gel_replaced_param, ESP_RMAKER_UI_TRIGGER));
     // Add the parameter to the device
-    ESP_ERROR_CHECK(esp_rmaker_device_add_param(sht31_device, is_gel_replaced_param));
+    ESP_ERROR_CHECK(esp_rmaker_device_add_param(drybox_device, is_gel_replaced_param));
 
     // Enable OTA
     ESP_ERROR_CHECK(esp_rmaker_ota_enable_default());
@@ -198,7 +241,8 @@ void app_main(void)
 
     #endif
 
-    while(1)
+    // Infinite loop for the programme with counter
+    for(int counter = 0; true; counter++)
     {
         // Run code if configured to use SHT31 sensor
         #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_SENSOR_ONLY
@@ -208,18 +252,35 @@ void app_main(void)
 
         #endif
 
-        // Run code if configured to test Rainmaker IoT service
-        #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY
+        // When it is too humid and the timer has not started yet
+        if(humidity >= 60.0 && !has_timer_started)
+        {
+            // Start the timer
+            ESP_LOGI(TAG, "Timer started");
+            xTimerStart(humid_timer, 0);
 
-        // Add code to update rainmaker cloud here
-        ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(humidity_param, esp_rmaker_float(humidity)));
-        ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(temperature_param, esp_rmaker_float(temperature)));
+            // Set the humid timer boolean to true
+            has_timer_started = true;
+        }
+        
+        // When counter is 120 (1 min has passed)
+        if(counter == 120)
+        {
+            // Run code if configured to test Rainmaker IoT service
+            #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY
 
-        #endif
+            // Add code to update rainmaker cloud here
+            ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(humidity_param, esp_rmaker_float(humidity)));
+            ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(temperature_param, esp_rmaker_float(temperature)));
 
-        ESP_LOGI(TAG, "Temperature(C): %f, Humidity(%%): %f", temperature, humidity);
+            #endif
 
-        // Delay for 1 min
-        vTaskDelay(60000/portTICK_PERIOD_MS);
+            // Display updated temperature and humidity
+            ESP_LOGI(TAG, "Temperature(C): %f, Humidity(%%): %f", temperature, humidity);
+            counter = 0; // Clear counter
+        }
+
+        // Delay for 500 ms
+        vTaskDelay(500/portTICK_PERIOD_MS);
     }
 }

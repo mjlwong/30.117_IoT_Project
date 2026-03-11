@@ -44,7 +44,7 @@ esp_rmaker_device_t * drybox_device;
 TimerHandle_t humid_timer;
 
 // Humid timer boolean variable to keep track if the timer has started yet
-static bool has_timer_started = false;
+static bool timer_has_started = false;
 
 // Add callback function if configured to test Rainmaker IoT service
 #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY
@@ -60,14 +60,14 @@ static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_pa
     }
 
     // If the user pressed the replaced silica gel button
-    if (strcmp(esp_rmaker_param_get_name(param), "Press to indicate Silica Gel is replaced") == 0)
+    if (strcmp(esp_rmaker_param_get_name(param), "Press to indicate Silica Gel has been replaced") == 0)
     {
         // Set the dryness parameter to good on the app, stop the timer, clear the humid timer boolean to 0
         ESP_LOGI(TAG, "Silica Gel Replaced");
         esp_rmaker_param_update_and_report(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
                                             esp_rmaker_str("Good"));
         xTimerStop(humid_timer, 0);
-        has_timer_started = false;
+        timer_has_started = false;
     }
 
     return ESP_OK;
@@ -81,7 +81,7 @@ void dryness_update(TimerHandle_t humid_timer)
     // When time is up and humidity has not gone down
     if(humidity >= 60.0)
     {
-        // Flip the dryness boolean to indicate drybox is inadequetely dry
+        // Send warning on terminal that silica gel should be replaced
         ESP_LOGW(TAG, "High Humidity: Please replace Silica Gel");
         // Indicate on the app that the silica gel should be replaced
         esp_rmaker_param_update_and_notify(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
@@ -89,7 +89,7 @@ void dryness_update(TimerHandle_t humid_timer)
     }
 
     // Reset humid timer boolean
-    has_timer_started = false;
+    timer_has_started = false;
 }
 
 // SHT31 initialisation function
@@ -199,10 +199,10 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(drybox_device, dryness_param));
 
     // Create boolean custom parameter to check if silica gel is replaced
-    esp_rmaker_param_t * is_gel_replaced_param = esp_rmaker_param_create("Press to indicate Silica Gel is replaced", 
-                                                                NULL, 
-                                                                esp_rmaker_bool(true), 
-                                                                PROP_FLAG_READ | PROP_FLAG_WRITE);
+    esp_rmaker_param_t * is_gel_replaced_param = esp_rmaker_param_create("Press to indicate Silica Gel has been replaced", 
+                                                                        NULL, 
+                                                                        esp_rmaker_bool(true), 
+                                                                        PROP_FLAG_READ | PROP_FLAG_WRITE);
     // Trigger button to press when silica gel is replaced
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(is_gel_replaced_param, ESP_RMAKER_UI_TRIGGER));
     // Add the parameter to the device
@@ -253,14 +253,14 @@ void app_main(void)
         #endif
 
         // When it is too humid and the timer has not started yet
-        if(humidity >= 60.0 && !has_timer_started)
+        if(humidity >= 60.0 && !timer_has_started)
         {
             // Start the timer
             ESP_LOGI(TAG, "Timer started");
             xTimerStart(humid_timer, 0);
 
             // Set the humid timer boolean to true
-            has_timer_started = true;
+            timer_has_started = true;
         }
         
         // When counter is 120 (1 min has passed)

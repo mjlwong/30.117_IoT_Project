@@ -5,9 +5,8 @@
 
 // Include RTOS libraries
 #include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 #include "freertos/task.h"
-#include "freertos/queue.h"
-#include "freertos/event_groups.h"
 
 // Include Rainmaker libraries
 #include <esp_rmaker_core.h>
@@ -86,6 +85,13 @@ void dryness_update(TimerHandle_t humid_timer)
         // Indicate on the app that the silica gel should be replaced
         esp_rmaker_param_update_and_notify(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
                                             esp_rmaker_str("Bad: Please replace Silica Gel"));
+    }
+    // When time is up and humidity has gone down adequetely
+    else
+    {
+        // Indicate on the app that dryness is now good
+        esp_rmaker_param_update_and_report(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
+                                            esp_rmaker_str("Good"));
     }
 
     // Reset humid timer boolean
@@ -167,7 +173,7 @@ void app_main(void)
                                                             "Drybox Humidity Sensor")));
     
     // Create a custom humidity parameter
-    esp_rmaker_param_t * humidity_param = esp_rmaker_param_create("Drybox Humidity", 
+    esp_rmaker_param_t * humidity_param = esp_rmaker_param_create("Drybox Humidity (RH Percentage)", 
                                                                 NULL, 
                                                                 esp_rmaker_float(50.0), 
                                                                 PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
@@ -184,7 +190,7 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_rmaker_device_assign_primary_param(drybox_device, humidity_param));
 
     // Add Temperature as another parameter
-    esp_rmaker_param_t * temperature_param = esp_rmaker_temperature_param_create("Drybox Temperature", 25.0);
+    esp_rmaker_param_t * temperature_param = esp_rmaker_temperature_param_create("Drybox Temperature (°C)", 25.0);
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(temperature_param, ESP_RMAKER_UI_TEXT));
     ESP_ERROR_CHECK(esp_rmaker_device_add_param(drybox_device, temperature_param));
 

@@ -30,12 +30,12 @@ static const char * TAG = "main";
 static float temperature = 25.0, humidity = 40.0;
 
 // Declare SHT31 sensor device object for interfacing
-#if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_SENSOR_ONLY
+#ifdef CONFIG_TEST_SENSOR
 static sht3x_t sht31_dev;
 #endif
 
 // Declare drybox device object for Rainmaker
-#if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY 
+#ifdef CONFIG_TEST_RAINMAKER 
 esp_rmaker_device_t * drybox_device;
 #endif
 
@@ -46,7 +46,7 @@ TimerHandle_t humid_timer;
 static bool timer_has_started = false;
 
 // Add callback function if configured to test Rainmaker IoT service
-#if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY
+#ifdef CONFIG_TEST_RAINMAKER
 
 // Callback to handle commands received from the RainMaker cloud
 static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_param_t *param,
@@ -78,20 +78,25 @@ static esp_err_t write_cb(const esp_rmaker_device_t *device, const esp_rmaker_pa
 void dryness_update(TimerHandle_t humid_timer)
 {
     // When time is up and humidity has not gone down
-    if(humidity >= 60.0)
+    if(humidity >= (float) CONFIG_HUMID_THRESHOLD)
     {
         // Send warning on terminal that silica gel should be replaced
         ESP_LOGW(TAG, "High Humidity: Please replace Silica Gel");
+
+        #ifdef CONFIG_TEST_RAINMAKER
         // Indicate on the app that the silica gel should be replaced
         esp_rmaker_param_update_and_notify(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
                                             esp_rmaker_str("Bad: Please replace Silica Gel"));
+        #endif
     }
     // When time is up and humidity has gone down adequetely
     else
     {
+        #ifdef CONFIG_TEST_RAINMAKER
         // Indicate on the app that dryness is now good
         esp_rmaker_param_update_and_report(esp_rmaker_device_get_param_by_name(drybox_device, "Dryness Status"), 
                                             esp_rmaker_str("Good"));
+        #endif
     }
 
     // Reset humid timer boolean
@@ -102,7 +107,7 @@ void dryness_update(TimerHandle_t humid_timer)
 void sht31_init(void)
 {
     // Run code if configured to use SHT31 sensor
-    #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_SENSOR_ONLY
+    #ifdef CONFIG_TEST_SENSOR
 
     // Begin I2C
     ESP_ERROR_CHECK(i2cdev_init());
@@ -135,7 +140,7 @@ void app_main(void)
     sht31_init();
 
     // Run code if configured to test Rainmaker IoT service
-    #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY
+    #ifdef CONFIG_TEST_RAINMAKER
 
     // Initialize NVS
     esp_err_t err = nvs_flash_init();
@@ -173,7 +178,7 @@ void app_main(void)
                                                             "Drybox Humidity Sensor")));
     
     // Create a custom humidity parameter
-    esp_rmaker_param_t * humidity_param = esp_rmaker_param_create("Drybox Humidity (RH Percentage)", 
+    esp_rmaker_param_t * humidity_param = esp_rmaker_param_create("Drybox Humidity (Percent RH)", 
                                                                 NULL, 
                                                                 esp_rmaker_float(50.0), 
                                                                 PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
@@ -251,7 +256,7 @@ void app_main(void)
     for(int counter = 0; true; counter++)
     {
         // Run code if configured to use SHT31 sensor
-        #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_SENSOR_ONLY
+        #ifdef CONFIG_TEST_SENSOR
 
         // Get measurement from sensor
         ESP_ERROR_CHECK(sht3x_measure(&sht31_dev, &temperature, &humidity));
@@ -259,7 +264,7 @@ void app_main(void)
         #endif
 
         // When it is too humid and the timer has not started yet
-        if(humidity >= 60.0 && !timer_has_started)
+        if(humidity >= (float) CONFIG_HUMID_THRESHOLD && !timer_has_started)
         {
             // Start the timer
             ESP_LOGI(TAG, "Timer started");
@@ -269,11 +274,11 @@ void app_main(void)
             timer_has_started = true;
         }
         
-        // When counter is 120 (1 min has passed)
+        // When the counter reaches 120 (1 min is up)
         if(counter == 120)
         {
             // Run code if configured to test Rainmaker IoT service
-            #if defined CONFIG_BOTH_RAINMAKER_AND_SENSOR || defined CONFIG_RAINMAKER_ONLY
+            #ifdef CONFIG_TEST_RAINMAKER
 
             // Add code to update rainmaker cloud here
             ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(humidity_param, esp_rmaker_float(humidity)));
@@ -282,7 +287,7 @@ void app_main(void)
             #endif
 
             // Display updated temperature and humidity
-            ESP_LOGI(TAG, "Temperature(C): %f, Humidity(%%): %f", temperature, humidity);
+            ESP_LOGI(TAG, "Temperature (°C): %f, Humidity (%%RH): %f", temperature, humidity);
             counter = 0; // Clear counter
         }
 

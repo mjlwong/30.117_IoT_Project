@@ -1,38 +1,30 @@
 menu "SHT3X Configuration"
-    choice SHT3X_TEST
-        prompt "Demo mode"
-        default BOTH_RAINMAKER_AND_SENSOR
+
+    config TEST_SENSOR
+        bool "Sensor Only"
+        default y
         help
-            Choose to test either the rainmaker, sensor or both functionalities.
+            Turn on to test if sensor code is working. 
 
-        config BOTH_RAINMAKER_AND_SENSOR
-            bool "Both Rainmaker and Sensor"
-            help
-                Test both rainmaker and sensor functionalities. 
+    config TEST_RAINMAKER
+        bool "Rainmaker Only"
+        default y
+        help
+            Turn on to test if the Rainmaker code is working. 
 
-        config SENSOR_ONLY
-            bool "Sensor Only"
-            help
-                Test only the sensor functionality, print results. 
-
-        config RAINMAKER_ONLY
-            bool "Rainmaker Only"
-            help
-                Test only the rainmaker functionality, feed false humidity data. 
-                
-        config NONE
-            bool "NONE"
-            help
-                Test neither functionalities. 
-
-    endchoice
+    config HUMID_THRESHOLD
+        int "Humidity Threshold"
+        default 40
+        help
+            The minimum humidity (in %RH) where the drybox is considered too humid, causing
+            the app to alert the user. 
 
     config HUMID_TIMER_LENGTH
         int "Humidity Timer Length"
         default 30
         help
-            The length of time in minutes the drybox is too humid before the Rainmaker app
-            sends a notification to the user to replace the Silica Gel. 
+            The length of time (in minutes) for the drybox to be humid before the app sends 
+            a notification to the user to replace the Silica Gel. 
 
     config SHT3X_ADDR
         hex "I2C address of SHT3x"

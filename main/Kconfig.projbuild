@@ -16,15 +16,15 @@ menu "SHT3X Configuration"
         int "Humidity Threshold"
         default 40
         help
-            The minimum humidity (in %RH) where the drybox is considered too humid, causing
-            the app to alert the user. 
+            The minimum humidity (in %RH) where the drybox is considered too humid, 
+            causing the app to alert the user. 
 
     config HUMID_TIMER_LENGTH
         int "Humidity Timer Length"
         default 30
         help
-            The length of time (in minutes) for the drybox to be humid before the app sends 
-            a notification to the user to replace the Silica Gel. 
+            The length of time (in minutes) for the drybox to be humid, before 
+            the app sends a notification to the user to replace the Silica Gel. 
 
     config SHT3X_ADDR
         hex "I2C address of SHT3x"

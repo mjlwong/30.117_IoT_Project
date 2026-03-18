@@ -274,8 +274,8 @@ void app_main(void)
             timer_has_started = true;
         }
         
-        // When the counter reaches 120 (1 min is up)
-        if(counter == 120)
+        // When the counter reaches 120 x update period in minutes
+        if(counter == CONFIG_UPDATE_PERIOD * 120)
         {
             // Run code if configured to test Rainmaker IoT service
             #ifdef CONFIG_TEST_RAINMAKER

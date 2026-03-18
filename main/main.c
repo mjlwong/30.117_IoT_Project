@@ -280,7 +280,7 @@ void app_main(void)
             // Run code if configured to test Rainmaker IoT service
             #ifdef CONFIG_TEST_RAINMAKER
 
-            // Add code to update rainmaker cloud here
+            // Update the Rainmaker app with the with the current humidity and temperature values
             ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(humidity_param, esp_rmaker_float(humidity)));
             ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(temperature_param, esp_rmaker_float(temperature)));
 

@@ -2,7 +2,7 @@
 
 ## Device Holder
 
-![Device_Holder](Images/Drybox_Device_Holder_Drawing_v7.pdf)
+![Device_Holder](Images/Drybox_Device_Holder_Drawing_v7.jpg)
 
 The above dimension drawing shows the shape of the holder that will contain the circuitry. It is a Fusion 360 CAD file that can be ported to other CAD software such as SolidWorks. The holder can be 3D printed from the base up, though its fabrication is up to the user to decide. The front slot is for holding the electronics board of the device, while the back is to place a portable charger to power the ESp32C6 via its USB-C ports. 
 

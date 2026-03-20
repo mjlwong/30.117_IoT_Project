@@ -8,19 +8,20 @@ This IoT Project is a humidity and temperature sensor, primarily for use in came
 
 * `.devcontainer`
 * `.vscode`
-* `CAD_Files`: Files containing the STL model of the holder, the dimensions and the circuitry of the project
-* `main`: Main folder containing C file for firmware, CMakeList, and configuration file for the menu
-    * `/CMakeLists.txt`: CMake file for main folder
-    * `/idf_component.yml`: YML file detailing required dependencies for this project
-    * `/Kconfig.projbuild`: Custom configuration file for easy troubleshooting
-    * `/main.c`: Main C file containing firmware code for the ESP32C6
+* `CAD_Files` - Files containing the Fusion 360 model of the holder
+* `Docs` - Files containing the dimensions, circuit diagram and user guides of the project
+* `main` - Main folder containing C file for firmware, CMakeList, and configuration file for the menu
+    * `/CMakeLists.txt` - CMake file for main folder
+    * `/idf_component.yml` - YML file detailing required dependencies for this project
+    * `/Kconfig.projbuild` - Custom configuration file for easy troubleshooting
+    * `/main.c` - Main C file containing firmware code for the ESP32C6
 * `.clangd`
-* `CMakeLists.txt`: CMake file for overall project
+* `CMakeLists.txt` - CMake file for overall project
 * `dependencies.lock`
-* `partitions_4mb_optmimised.csv`: CSV file to detail how the ESP32C6 flash memory will be partitioned
-* `sdkconfig.defaults`: Configuration file for project
-* `sdkconfig.defaults.esp32`: Configuration file specific to ESP32 boards
-* `sdkconfig.defaults.esp32c6`: Configuration file specific to ESP32C6 boards
+* `partitions_4mb_optmimised.csv` - CSV file to detail how the ESP32C6 flash memory will be partitioned
+* `sdkconfig.defaults` - Configuration file for project
+* `sdkconfig.defaults.esp32` - Configuration file specific to ESP32 boards
+* `sdkconfig.defaults.esp32c6` - Configuration file specific to ESP32C6 boards
 
 ## Dependencies
 
@@ -33,7 +34,7 @@ The following ESP-IDF components are required for this project:
 
 ## User Guide
 
-Click [here](Docs) to learn how to use this project. 
+Click [here](Docs/Getting_Started.md) to learn how to use this project. 
 
 ## Known issues
 

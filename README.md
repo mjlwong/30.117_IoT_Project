@@ -34,7 +34,10 @@ The following ESP-IDF components are required for this project:
 
 ## User Guide
 
-Click [here](Docs/Getting_Started.md) to learn how to use this project. 
+* [Getting Started](Docs/GettingStarted.md)
+* [Configuring](Docs/Configuring.md)
+* [Hardware](Docs/Hardware.md)
+* [Normal Usage](Docs/NormalUsage.md)
 
 ## Known issues
 

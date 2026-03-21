@@ -20,4 +20,6 @@ Download this GitHub project (ZIP Code or git clone). Select ESP32C6 as the targ
 
 With the USB still connected, open the serial monitor and scan the displayed QR code with the ESP Rainmaker App. Connect the ESP32C6 to your preferred WiFi. Once that is done, the App should display the below image. 
 
-![Drybox_Sensor_App_UI](Images/Drybox_Sensor_App_UI.jpg)
+<p align="center">
+<img src="Images/Drybox_Sensor_App_UI.jpg" width="50%" height="50%" \>
+</p>

@@ -14,7 +14,7 @@ The above dimension drawing shows the shape of the holder that will contain the 
 <img src="Images/Drybox_Circuit.drawio.png" width="50%" height="50%" \>
 </p>
 
-The circuit only comprises of the ESP32C6 and the SHT31 sensor. The devices are connected via an I2C bus, with GPIO pins 5 and 6 acting as SDA and SCL respectively. The circuit board needs to conform to the dimensions of the device holder. 
+The circuit only comprises of the ESP32C6 and the SHT31 sensor. The devices are connected via an I2C bus, with GPIO pins 5 and 6 acting as SDA and SCL respectively. Any circuit board that can wire the 2 components together can be used, from strip boards to custom designed PCBs. However, the circuit board needs to conform to the dimensions of the device holder, as well as allow the power USB-C cable to connect to the ESP32C6. 
 
 ## Full Assembly
 

@@ -1,7 +1,5 @@
 # Normal Usage
 
-## Operation
-
 <p align="center">
 <img src="Images/Drybox_Sensor_Flowchart.drawio.png" width="90%" height="90%" \>
 </p>

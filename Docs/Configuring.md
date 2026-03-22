@@ -1,7 +1,5 @@
 # Configuring Project
 
-## SDK Configuration Editor Menu
-
 <p align="center">
 <img src="Images/Drybox_Config_Menu.png" width="50%" height="50%" \>
 </p>

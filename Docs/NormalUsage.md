@@ -3,7 +3,7 @@
 ## Operation
 
 <p align="center">
-<img src="Images/Drybox_Sensor_Flowchart.drawio.png" width="50%" height="50%" \>
+<img src="Images/Drybox_Sensor_Flowchart.drawio.png" width="90%" height="90%" \>
 </p>
 
 The drybox sensor will periodically send the measured humidity and temperature from the SHT31 sensor. The user may also view the humidity and temperature against time on the app. 

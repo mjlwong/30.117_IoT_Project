@@ -144,7 +144,8 @@ void app_main(void)
 
     // Initialize NVS
     esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
@@ -154,7 +155,8 @@ void app_main(void)
     app_network_init();
 
     // Configure Rainmaker
-    esp_rmaker_config_t rainmaker_cfg = {
+    esp_rmaker_config_t rainmaker_cfg =
+    {
         .enable_time_sync = false,
     };
 

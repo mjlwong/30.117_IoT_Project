@@ -180,10 +180,7 @@ void app_main(void)
                                                             "Drybox Humidity Sensor")));
     
     // Create a custom humidity parameter
-    esp_rmaker_param_t * humidity_param = esp_rmaker_param_create("Drybox Humidity (Percent RH)", 
-                                                                NULL, 
-                                                                esp_rmaker_float(50.0), 
-                                                                PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    esp_rmaker_param_t * humidity_param = esp_rmaker_temperature_param_create("Drybox Humidity (Percent RH)", 50.0);
     // Humidity parameter to display the text of the humidity percentage
     ESP_ERROR_CHECK(esp_rmaker_param_add_ui_type(humidity_param, ESP_RMAKER_UI_TEXT));
     // Bounded between 0-100

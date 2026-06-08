@@ -26,8 +26,8 @@
 // Tag for log message
 static const char * TAG = "main";
 
-// Float variables to store temperature and humidity
-static float temperature = 25.0, humidity = 40.0;
+// Float variables to store temperature and humidity, as well as their accumulated sums
+static float temperature = 25.0, humidity = 40.0, temp_sum = 0, humid_sum = 0;
 
 // Declare SHT31 sensor device object for interfacing
 #ifdef CONFIG_TEST_SENSOR
@@ -262,6 +262,10 @@ void app_main(void)
 
         #endif
 
+        // Add current temperature and humidity to temperature sum and humidity sum
+        temp_sum += temperature;
+        humid_sum += humidity;
+
         // When it is too humid and the timer has not started yet
         if(humidity >= (float) CONFIG_HUMID_THRESHOLD && !timer_has_started)
         {
@@ -279,14 +283,14 @@ void app_main(void)
             // Run code if configured to test Rainmaker IoT service
             #ifdef CONFIG_TEST_RAINMAKER
 
-            // Update the Rainmaker app with the with the current humidity and temperature values
-            ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(humidity_param, esp_rmaker_float(humidity)));
-            ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(temperature_param, esp_rmaker_float(temperature)));
+            // Update the Rainmaker app with the with the average humidity and temperature values from the past readings
+            ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(humidity_param, esp_rmaker_float(humid_sum/counter)));
+            ESP_ERROR_CHECK(esp_rmaker_param_update_and_report(temperature_param, esp_rmaker_float(temp_sum/counter)));
 
             #endif
 
             // Display updated temperature and humidity
-            ESP_LOGI(TAG, "Temperature (°C): %f, Humidity (%%RH): %f", temperature, humidity);
+            ESP_LOGI(TAG, "Temperature (°C): %f, Humidity (%%RH): %f", temp_sum/counter, humid_sum/counter);
             counter = 0; // Clear counter
         }
 

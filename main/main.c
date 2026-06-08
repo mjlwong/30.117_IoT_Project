@@ -291,7 +291,11 @@ void app_main(void)
 
             // Display updated temperature and humidity
             ESP_LOGI(TAG, "Temperature (°C): %f, Humidity (%%RH): %f", temp_sum/counter, humid_sum/counter);
-            counter = 0; // Clear counter
+            
+            // Clear counter, temperature sum and humidity sum
+            counter = 0;
+            temp_sum = 0;
+            humid_sum = 0;
         }
 
         // Delay for 500 ms

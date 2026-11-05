@@ -42,5 +42,3 @@ The following ESP-IDF components are required for this project:
 ## Known issues
 
 The ESP Rainmaker App on IOS does not have a UI type for one of the components. To fix this, go to `main/main.c`, line 218, and change `ESP_RMAKER_UI_TRIGGER` to `ESP_RMAKER_UI_TOGGLE`. 
-
-Thank you. 
